@@ -22,6 +22,7 @@ EnterBoss.wav		(freesound.org)		XfiXy8
 Hit.wav			(freesound.org)		Unknown
 Boss_Laser.wav		(freesound.org)		tjcason
 Game_Over.wav		(freesound.org)		unknown
+Laser.wav		(freesound.ord)		TheDweebMan
 
 Stage1.wav		(zapsplat.com)		unspecified
 Boss1.wav		(zapsplat.com)		unspecified

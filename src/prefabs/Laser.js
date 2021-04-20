@@ -1,10 +1,10 @@
-// Rocket prefab
-class Rocket extends Phaser.GameObjects.Sprite {
+// Laser prefab
+class Laser extends Phaser.GameObjects.Sprite {
     constructor(scene, x, y, texture, frame) {
         super(scene, x, y, texture, frame);
 
         //Movement speed
-        this.MOVEMENT_SPEED = 6;
+        this.MOVEMENT_SPEED = 12;
         
         //Adding object to scene.
         scene.add.existing(this);

@@ -1,6 +1,6 @@
 // Spaceship[Player] Prefab
 class Spaceship extends Phaser.GameObjects.Sprite {
-    constructor(scene, x, y, texture, frame) {
+    constructor(scene, x, y, texture, frame, LaserSfx, LaserConfig, RocketSfx, RocketConfig) {
         super(scene, x, y, texture, frame); // Something
         
         //Movement directions
@@ -14,16 +14,25 @@ class Spaceship extends Phaser.GameObjects.Sprite {
         this.DPressed = false;
         this.SpacePressed = false;
 
-        //Ship rank
-        this.Level = 1;
-        this.MOVEMENT_SPEED = 5;
+        //Class fields
+        this.Level = 1; //Ship rank
+        this.Rocket_Cooldown = false; //Cooldown for rocket projectiles
+        this.MOVEMENT_SPEED = 5; //Movement speed
+        this.scene = scene; //scene reference
+        this.Sfx_Laser = LaserSfx; //Sfx reference
+        this.Laser_Config = LaserConfig; //Config reference
+        this.Sfx_Rocket = RocketSfx; //Sfx reference
+        this.Rocket_Config = RocketConfig; //Config reference
+        
+        //List of spawned Projectiles
+        this.Projectiles = new Phaser.GameObjects.Group(scene);
 
         //Adding object to scene.
         scene.add.existing(this);
     }
 
     update() {
-        //Updating sprite location
+        //Updating Spaceship location
         if( this.XDirection > 0 &&
             this.x + this.XDirection < game.config.width - 50)
         {
@@ -57,12 +66,50 @@ class Spaceship extends Phaser.GameObjects.Sprite {
             this.XDirection -= this.MOVEMENT_SPEED;
             this.DPressed = false;
         }
+
         //Shooting behavior (Keyup + Keydown)
         if (Phaser.Input.Keyboard.JustUp(keySpace)) {
             console.log("Space released");
         }
-        if (Phaser.Input.Keyboard.JustDown(keySpace)) {
+        if (Phaser.Input.Keyboard.JustDown(keySpace)) { //Spawn Rocket
             console.log("Space pressed");
+            //General laser shot
+            this.Sfx_Laser.play(this.Laser_Config);
+            this.Projectiles.add(
+                new Laser(
+                    this.scene, this.x, this.y - 60, "Laser", 0
+                ).setScale(0.5).setDepth(11)
+            );
+            
+            if(this.Level > 1) { //2 Extra lasers
+                this.Sfx_Laser.play(this.Laser_Config);
+                this.Projectiles.add(
+                    new Laser(
+                        this.scene, this.x - 20, this.y - 15, "Laser", 0
+                    ).setScale(0.5).setDepth(11)
+                );
+                this.Projectiles.add(
+                    new Laser(
+                        this.scene, this.x + 20, this.y - 15, "Laser", 0
+                    ).setScale(0.5).setDepth(11)
+                );
+            }
+
+            if(this.Level > 2 && !this.Rocket_Cooldown) { //2 Rockets exclusive to t3
+                this.Sfx_Rocket.play(this.Rocket_Config);
+                this.Rocket_Cooldown = true;
+                this.Projectiles.add(
+                    new Rocket(
+                        this.scene, this.x + 40, this.y - 10, "Rocket", 0
+                    ).setScale(0.2, 0.3).setDepth(10).play("Rocket_Loop")
+                );
+                this.Projectiles.add(
+                    new Rocket(
+                        this.scene, this.x - 40, this.y - 10, "Rocket", 0
+                    ).setScale(0.2, 0.3).setDepth(10).play("Rocket_Loop")
+                );
+                this.Rocket_Cooldown = false;
+            }
         }
         
         //Testing levelups

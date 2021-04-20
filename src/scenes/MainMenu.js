@@ -13,6 +13,7 @@ class MainMenu extends Phaser.Scene {
         //Loading Sfx
         this.load.audio('Sfx_Player_Death', './assets/Sound/Player-Death.wav');
         this.load.audio('Sfx_Player_Lose', './assets/Sound/Game_Over.wav');
+        this.load.audio('Sfx_Player_Laser', './assets/Sound/Laser.wav');
         this.load.audio('Sfx_Player_Powerup', './assets/Sound/Powerup.wav');
         this.load.audio('Sfx_Explosion', './assets/Sound/Explosion.wav');
         this.load.audio('Sfx_Boss_Enter', './assets/Sound/EnterBoss.wav');

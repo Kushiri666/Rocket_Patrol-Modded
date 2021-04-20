@@ -51,7 +51,7 @@ class MainMenu extends Phaser.Scene {
         menuConfig.color = '#000';
 
         //Defining Keys (Relative to this scene Only)
-        keySpace = this.input.keyboard.addKey(Phaser.Input.keyboard.KeyCodes.SPACE);
+        keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         keyW = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
         keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
     }
@@ -59,7 +59,16 @@ class MainMenu extends Phaser.Scene {
     update() {
         //Start game
         if (Phaser.Input.Keyboard.JustDown(keySpace)) {
-            this.scene.start('playScene');    
+            console.log("Space pressed");
+            this.scene.start('Scene_Stage1');    
+        }
+        if (Phaser.Input.Keyboard.JustDown(keyW)) {
+            console.log("Space pressed");
+            //this.scene.start('Scene_Stage1');    
+        }
+        if (Phaser.Input.Keyboard.JustDown(keyS)) {
+            console.log("Space pressed");
+            //this.scene.start('Scene_Stage1');    
         }
     }
 }

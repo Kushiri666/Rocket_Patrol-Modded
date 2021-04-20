@@ -7,7 +7,7 @@ Laser.png		 10 x  120		1 x 1			true/false	true/false
 Enemy1.png		280 x  280		2 x 1			true		true
 Enemy2.png		390 x  390		2 x 1			false		false
 Fireball.png		320 x  320		4 x 1			true		true
-Explostion.png		Good Question		1 x 1			true/false	true/false
+Explosion.png		420 x  420		1 x 1			true/false	true/false
 Purple_Boss-Head.png	470 x  470		4 x 5			false		false
 Purple_Boss-Claw.png	240 x  120		1 x 1			true/false	true/false
 ALL ART DONE BY ME: ETHAN ERH

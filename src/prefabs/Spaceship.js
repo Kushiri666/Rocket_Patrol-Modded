@@ -29,7 +29,8 @@ class Spaceship extends Phaser.GameObjects.Sprite {
         {
             this.x += this.XDirection;
         } 
-        else if(this.x + this.XDirection > 50)
+        else if(this.XDirection < 0 &&
+            this.x + this.XDirection > 50)
         {
             this.x += this.XDirection;
         }
@@ -56,8 +57,15 @@ class Spaceship extends Phaser.GameObjects.Sprite {
             this.XDirection -= this.MOVEMENT_SPEED;
             this.DPressed = false;
         }
-
+        //Shooting behavior (Keyup + Keydown)
+        if (Phaser.Input.Keyboard.JustUp(keySpace)) {
+            console.log("Space released");
+        }
+        if (Phaser.Input.Keyboard.JustDown(keySpace)) {
+            console.log("Space pressed");
+        }
         
+        //Testing levelups
         if (Phaser.Input.Keyboard.JustDown(keyW)) {
             console.log("W Pressed");
             if(this.upgrade()) {
@@ -76,9 +84,6 @@ class Spaceship extends Phaser.GameObjects.Sprite {
             }
             console.log(this.Level);
         }
-
-        //Applying movement direction
-
     }
 
     upgrade() {

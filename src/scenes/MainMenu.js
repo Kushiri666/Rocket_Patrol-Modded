@@ -5,10 +5,10 @@ class MainMenu extends Phaser.Scene {
 
     preload() {
         //Loading Music
-        this.load.audio('Music_Menu', './assets/Sound/Menu.wav');
         this.load.audio('Music_Stage1', './assets/Sound/Stage1.wav');
         this.load.audio('Music_Boss1', './assets/Sound/Boss1.wav');
         this.load.audio('Music_Boss2', './assets/Sound/Boss2.wav');
+        this.load.audio('Music_Menu', './assets/Sound/Menu.wav');
 
         //Loading Sfx
         this.load.audio('Sfx_Player_Death', './assets/Sound/Player-Death.wav');
@@ -54,12 +54,25 @@ class MainMenu extends Phaser.Scene {
         keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         keyW = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
         keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+
+        //Configuring music
+        this.Music_Menu = this.sound.add("Music_Menu");
+        this.Menu_Config = {
+            mute: false,
+            volume: 0.5,
+            loop: true,
+            delay: 0
+        };
+
+        //Playing music
+        this.Music_Menu.play(this.Menu_Config);
     }
 
     update() {
         //Start game
         if (Phaser.Input.Keyboard.JustDown(keySpace)) {
             console.log("Space pressed");
+            this.Music_Menu.stop();
             this.scene.start('Scene_Stage1');    
         }
         if (Phaser.Input.Keyboard.JustDown(keyW)) {

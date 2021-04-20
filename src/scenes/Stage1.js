@@ -4,6 +4,7 @@ class Stage1 extends Phaser.Scene {
     }
 
     preload() {
+        
         // load images/tile sprites
         this.load.image('Explosion', './assets/Art/Explosion.png');
         this.load.image('Laser', './assets/Art/Laser.png');
@@ -37,25 +38,56 @@ class Stage1 extends Phaser.Scene {
     create() {
         //Animations config
         this.anims.create({ //Rocket Loop
-            key: 'Rocket',
+            key: 'Rocket_Loop',
             frames: this.anims.generateFrameNumbers('Rocket', { start: 0, end: 1, first: 0}),
             frameRate: 8
         });
         this.anims.create({ //Fireball Loop
-            key: 'Fireball',
+            key: 'Fireball_Loop',
             frames: this.anims.generateFrameNumbers('Stage1_Fireball', { start: 0, end: 3, first: 0}),
             frameRate: 8
         });
         this.anims.create({ //Enemy1 Loop
-            key: 'Enemy1',
+            key: 'Enemy1_Loop',
             frames: this.anims.generateFrameNumbers('Stage1_Enemy1', { start: 0, end: 1, first: 0}),
             frameRate: 8
         });
         this.anims.create({ //Enemy2 Loop
-            key: 'Enemy2',
+            key: 'Enemy2_Loop',
             frames: this.anims.generateFrameNumbers('Stage1_Enemy2', { start: 0, end: 1, first: 0}),
             frameRate: 0
         });
+        this.anims.create({ //Background Loop
+            key: 'Olympus',
+            frames: this.anims.generateFrameNumbers('Stage1_Background', { start: 0, end: 1, first: 0}),
+            frameRate: 1,
+            repeat: -1
+        });
+
+        //Soundtrack config
+        this.Music_Stage1 = this.sound.add("Music_Stage1");
+        this.Stage1_Config = {
+            mute: false,
+            volume: 0.25,
+            loop: true,
+            delay: 0
+        };
+        this.Music_Boss1 = this.sound.add("Music_Boss1");
+        this.Boss1_Config = {
+            mute: false,
+            volume: 0.5,
+            loop: true,
+            delay: 0
+        };
+        this.Music_Boss2 = this.sound.add("Music_Boss2");
+        this.Boss2_Config = {
+            mute: false,
+            volume: 0.5,
+            loop: true,
+            delay: 0
+        };
+        
+
 
         //Loading in background
         this.Background = this.add.sprite(
@@ -79,13 +111,26 @@ class Stage1 extends Phaser.Scene {
         keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
         keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
         keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        
+        //Flags
+        this.HeardRoar = false;
+        this.ReachedPinnacle = false;
+        this.EnteredBoss = false;
+        this.clearedForest = false;
+        this.GameStart = false;
 
+        //Starting background animation.
+        this.Background.play("Olympus");
+
+        //Playing starting music
+        this.Music_Stage1.play(this.Stage1_Config);
     }
 
     update() {
         this.Player.update();
-        if(this.Background.y < this.Background.height + (2.25 * game.config.height)) {
-            this.Background.y += 0.25;
+        if(this.Background.y < this.Background.height + (2 * game.config.height)) {
+            this.Background.y += 0.1;
         }
+
     }
 }

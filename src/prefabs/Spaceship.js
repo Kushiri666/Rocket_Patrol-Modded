@@ -3,6 +3,11 @@ class Spaceship extends Phaser.GameObjects.Sprite {
     constructor(scene, x, y, texture, frame, LaserSfx, LaserConfig, RocketSfx, RocketConfig) {
         super(scene, x, y, texture, frame); // Something
         
+        //Mandatory fields
+        this.class = 'Spaceship';
+        this.hitbox_width = 60;
+        this.hitbox_height = 60;
+
         //Movement directions
         this.XDirection = 0;
         this.YDirection = 0;
@@ -128,7 +133,7 @@ class Spaceship extends Phaser.GameObjects.Sprite {
         this.Projectiles.add( //Create laser
             new Laser(
                 this.scene, this.x + xOffset, this.y + yOffset, "Laser", 0
-            ).setScale(0.5).setDepth(11)
+            ).setScale(0.5).setDepth(11 )
         );
     }
 
@@ -149,6 +154,21 @@ class Spaceship extends Phaser.GameObjects.Sprite {
             this.Level--;
             this.setFrame(this.Level - 1);
             return true;
+        }
+    }
+
+    checkCollision(obj2) {
+        var Xdist = Math.abs(this.x - obj2.x);
+        var Ydist = Math.abs(this.y - obj2.y);
+
+        var Xtol = this.hitbox_width + obj2.hitbox_width;
+        var Ytol = this.hitbox_height + obj2.hitbox_height;
+
+        if(Xdist < Xtol &&
+            Ydist < Ytol) {
+            return true;
+        } else {
+            return false;
         }
     }
 

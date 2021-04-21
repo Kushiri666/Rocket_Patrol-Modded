@@ -80,6 +80,21 @@ class Stage1 extends Phaser.Scene {
         this.Monsters = new Phaser.GameObjects.Group(this);
         this.SpawnCooldown = false; //Cooldown to determine if monsters can be spawned.
         
+        //Group for storing monster projectiles.
+        this.MonsterProjectiles = new Phaser.GameObjects.Group(this);
+
+        //Collision modifiers (just a reminder. the values are actually referenced in the monster classes)
+        this.CM = {};
+        this.CM.Spaceship = 60;
+        this.CM.Laser = {};
+            this.CM.Laser.X = 3;
+            this.CM.Laser.Y = 30;
+        this.CM.Rocket = {};
+            this.CM.Rocket.X = 31;
+            this.CM.Rocket.Y = 52;
+        this.CM.Enemy1 = 54;
+        this.CM.Fireball = 16;
+
         //Spawning in player
         this.Player = new Spaceship(
             this, game.config.width/2, game.config.height - 100, "Spaceship", 0,
@@ -113,31 +128,45 @@ class Stage1 extends Phaser.Scene {
     }
 
     update() {
-        //Updating player (Spaceship)
-        this.Player.update();
-
-        var Temp; //temp group storage
-        //Checking for collisions
-
-        //Updating projectile positions.
-        Temp = this.Player.Projectiles
+        //======================================================================
+        // Collision
+        //======================================================================
+        var Temp; //temp group storage for in-loop referencing
+        var Temp2; //^^^
+        //Updating player projectile positions + collision.
+        Temp = this.Player.Projectiles;
+        Temp2 = this.Monsters;
         Temp.getChildren().forEach(function(Projectile) {
             Projectile.update();
+            
+            //Checking for collision (monsters)
+            Temp2.getChildren().forEach(function(Monster) {
+                if(Projectile.checkCollision(Monster)) {
+                    console.log("Projectile hit!");
+                    Temp.remove(Projectile, true, true); //Removing projectile
+                    Temp2.remove(Monster, true, true); //Removing monster
+                }
+            });
+            
             //Deleting off-screen drifters
-            if(Projectile.y < -100|| //far off down
-                Projectile.y > game.config.height + 100 || //far off up
-                Projectile.x < -100 || //far off left
-                Projectile.x > game.config.width + 100) //far off right 
-            {
+            if(Projectile.y < -100) {
                 Temp.remove(Projectile, true, true);
             }
         });
 
-        //Updating monster positions.
-        Temp = this.Monsters
+        //Updating monster positions + collisions.
+        Temp = this.Monsters;
+        Temp2 = this.Player;
         Temp.getChildren().forEach(function(Monster) {
             Monster.update();
-             //Deleting off-screen drifters
+            
+            //Checking for collision (player ship only since player projectile checked before^^^)
+            if(Monster.checkCollision(Temp2)) {
+                console.log('Player hit!');
+                Temp.remove(Monster, true, true); //Removing monster
+            }
+            
+            //Deleting off-screen drifters
             if(Monster.y < -100 || //far off down
                 Monster.y > game.config.height + 100 || //far off up
                 Monster.x < -100 || //far off left
@@ -147,19 +176,38 @@ class Stage1 extends Phaser.Scene {
             }
         });
 
+        //Updating monster projectile positions + collisions.
+        Temp = this.MonsterProjectiles;
+        Temp2 = this.Player;
+        Temp.getChildren().forEach(function(Projectile) {
+            Projectile.update();
+
+            //Checking for collision (Player only)
+            if(Projectile.checkCollision(Temp2)) {
+                console.log('Player hit!');
+                Temp.remove(Projectile, true, true);//Removing projectile
+            }
+
+             //Deleting off-screen drifters
+            if(Projectile.y < -100 || //far off down
+                Projectile.y > game.config.height + 100 || //far off up
+                Projectile.x < -100 || //far off left
+                Projectile.x > game.config.width + 100) //far off right 
+            {
+                Temp.remove(Projectile, true, true);
+            }
+        });
+
+        //======================================================================
+        // Others
+        //======================================================================
+        //Updating player (Spaceship)
+        this.Player.update();
+
         //Drifting the background downwards until the top is reached.
         if(this.Background.y < this.Background.height + (2 * game.config.height)) {
             this.Background.y += 0.1;
         }
-
-        //spawning monsters (debug)
-        /*if(!this.SpawnCooldown) {
-            this.SpawnCooldown = true;
-            this.spawnZigZag();
-            setTimeout(() => {
-                this.SpawnCooldown = false;
-            }, 9000); //8000 for wave, 9000 for rain
-        }*/
 
         //spawning monsters
         if(!this.SpawnCooldown) {
@@ -171,21 +219,14 @@ class Stage1 extends Phaser.Scene {
                     this.SpawnCooldown = false;
                 }, 9000);
             } else {
-                this.spawnWave
+                this.spawnWave();
                 setTimeout(() => {
                     this.SpawnCooldown = false;
                 }, 8000);
             }
         }
-    }
 
-    //Object collision checker
-    checkCollision(Obj1, Obj2) {
-        if(true) {
-            return true;
-        } else {
-            return false;
-        }
+        //Flag checks
     }
 
     //Resetting for a new round (idk if phaser saves scene data so just in case).
@@ -206,6 +247,8 @@ class Stage1 extends Phaser.Scene {
         monsterData.player = this.Player;
         monsterData.behavior = 'wave';
 
+        //Additional data
+        monsterData.data.yDrift = (Math.floor(Math.random() * game.config.height / 8)) / game.config.width;
         //Movement direction
         var temp = Math.floor(Math.random() * 100);
         if(temp % 2 == 0) {
@@ -215,7 +258,7 @@ class Stage1 extends Phaser.Scene {
             monsterData.data.direction = 1;
             monsterData.spawnX = -60;
         }
-
+        
         //Fireball variance
         temp = Math.floor(Math.random() * 100);
         console.log(temp);
@@ -226,7 +269,7 @@ class Stage1 extends Phaser.Scene {
         }
 
         var MonsterCount = Math.floor(Math.random() * 4) + 8; //Number of monsters spawned
-        this.spawnEnemy(monsterData, 400, 0, MonsterCount); //Calling recursive spawn function
+        this.spawnEnemy1(monsterData, 400, 0, MonsterCount); //Calling recursive spawn function
     }
 
     spawnRain() { //Summons a wave of monsters that appear, then fall after a short delay.
@@ -252,33 +295,10 @@ class Stage1 extends Phaser.Scene {
         }
 
         var MonsterCount = Math.floor(Math.random() * 5) + 10; //Number of monsters spawned
-        this.spawnEnemy(monsterData, 400, 0, MonsterCount); //Calling recursive spawn function
+        this.spawnEnemy1(monsterData, 400, 0, MonsterCount); //Calling recursive spawn function
     }
 
-    spawnZigZag() { //Summons a wave of monsters that fall while drifting from side to side in a fixed Xrange.
-        //Setup
-        var direction = Math.floor(Math.random() * 100);
-        if(direction % 2 == 0) {direction = 1;} else {direction = -1;}
-        
-        //General data.
-        var monsterData = {};
-        monsterData.data = {};
-        monsterData.spawnX = (Math.floor(Math.random() * (game.config.width/4)) * direction) + game.config.width/2;
-        monsterData.spawnY = -60;
-        monsterData.movespeed = Math.floor(Math.random() * 2) + 2;
-        monsterData.player = this.Player;
-        monsterData.behavior = 'zigzag';
-
-        //Additional data
-        monsterData.data.direction = direction;
-        monsterData.data.travel_Distance = game.config.width/5;
-        monsterData.data.fireball_bahavior = 'target'; //fixed fireball type
-
-        var MonsterCount = Math.floor(Math.random() * 5) + 6; //Number of monsters spawned
-        this.spawnEnemy(monsterData, 400, 0, MonsterCount); //Calling recursive spawn function
-    }
-
-    spawnEnemy(monsterData, delay, count, goal) { //recursively spawns monsters at a fixed delay.
+    spawnEnemy1(monsterData, delay, count, goal) { //recursively spawns monsters at a fixed delay.
         console.log("Count: " + count + " Goal: " + goal);
         if(count < goal) {
             this.Monsters.add( //create enemy
@@ -288,6 +308,7 @@ class Stage1 extends Phaser.Scene {
                     monsterData.movespeed,
                     (Math.floor(Math.random() * 3) + 2) * 500, //firerate
                     monsterData.player,
+                    this.MonsterProjectiles,
                     monsterData.data
                 ).setOrigin(0.5, 0.5).setScale(0.4).setDepth(15).play('Enemy1_Loop')
             );
@@ -295,7 +316,7 @@ class Stage1 extends Phaser.Scene {
                 monsterData.spawnX = Math.floor(Math.random() * (game.config.width - 120)) + 60;
             }
             setTimeout(() => {
-                this.spawnEnemy(monsterData, delay, count + 1, goal);
+                this.spawnEnemy1(monsterData, delay, count + 1, goal);
             }, delay);
         }
     }

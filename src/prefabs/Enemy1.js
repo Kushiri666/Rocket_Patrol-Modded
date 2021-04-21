@@ -1,7 +1,12 @@
 // Enemy1 prefab
 class Enemy1 extends Phaser.GameObjects.Sprite {
-    constructor(scene, x, y, texture, frame, behavior, speed, rate, player, additionalInfo) {
+    constructor(scene, x, y, texture, frame, behavior, speed, rate, player, projectileStorage, additionalInfo) {
         super(scene, x, y, texture, frame);
+
+        //Mandatory fields
+        this.class = 'Enemy1';
+        this.hitbox_width = 51;
+        this.hitbox_height = 51;
 
         //won't update without it
         console.log(rate);
@@ -15,6 +20,7 @@ class Enemy1 extends Phaser.GameObjects.Sprite {
         this.fireball_Cooldown = true; //can't fire fireball if true
         this.player = player; //Player reference
         this.scene = scene; //Scene reference
+        this.storage = projectileStorage;
 
         //Rain specific fields
         this.reachedStop = false;
@@ -25,16 +31,12 @@ class Enemy1 extends Phaser.GameObjects.Sprite {
     }
 
     update() {
-
         //Perform the designated movement behavior.
         if(this.behavior == "wave") {
             this.wave();
         }
         if(this.behavior == "rain") {
             this.rain();
-        }
-        if(this.behavior == "zigzag") {
-            this.zigZag();
         }
 
         //starting fireball cooldown
@@ -58,13 +60,13 @@ class Enemy1 extends Phaser.GameObjects.Sprite {
             console.log("Shooting fireball");
 
             //creating fireball object
-            this.player.Projectiles.add(
+            this.storage.add(
                 new Fireball(
                     this.scene, this.x, this.y, 'Stage1_Fireball', 0,
                     3,
                     this.additionalData.fireball_behavior,
                     this.player
-                ).setScale(0.1).play('Fireball_Loop')
+                ).setDepth(14).setScale(0.1).play('Fireball_Loop')
             );
 
             setTimeout(() => {
@@ -79,6 +81,7 @@ class Enemy1 extends Phaser.GameObjects.Sprite {
     wave() {
         //Movement
         this.x += this.additionalData.direction * this.movement_Speed;
+        this.y += this.additionalData.yDrift;
 
         //Direction faced
         if(this.additionalData.direction > 0) {
@@ -108,13 +111,19 @@ class Enemy1 extends Phaser.GameObjects.Sprite {
         }
     }
 
-    zigZag() {
-        //Movement
-        if(this.x) {
-            
+    checkCollision(obj2) {
+        var Xdist = Math.abs(this.x - obj2.x);
+        var Ydist = Math.abs(this.y - obj2.y);
+
+        var Xtol = this.hitbox_width + obj2.hitbox_width;
+        var Ytol = this.hitbox_height + obj2.hitbox_height;
+
+        if(Xdist < Xtol &&
+            Ydist < Ytol) {
+            return true;
+        } else {
+            return false;
         }
-        this.y-= this.movement_Speed/2;
-        //Direction faced
     }
 
 }

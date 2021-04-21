@@ -74,41 +74,20 @@ class Spaceship extends Phaser.GameObjects.Sprite {
         if (Phaser.Input.Keyboard.JustDown(keySpace)) { //Spawn Rocket
             console.log("Space pressed");
             //General laser shot
-            this.Sfx_Laser.play(this.Laser_Config);
-            this.Projectiles.add(
-                new Laser(
-                    this.scene, this.x, this.y - 60, "Laser", 0
-                ).setScale(0.5).setDepth(11)
-            );
+            this.createLaser(0, -60);
             
-            if(this.Level > 1) { //2 Extra lasers
-                this.Sfx_Laser.play(this.Laser_Config);
-                this.Projectiles.add(
-                    new Laser(
-                        this.scene, this.x - 20, this.y - 15, "Laser", 0
-                    ).setScale(0.5).setDepth(11)
-                );
-                this.Projectiles.add(
-                    new Laser(
-                        this.scene, this.x + 20, this.y - 15, "Laser", 0
-                    ).setScale(0.5).setDepth(11)
-                );
+            if(this.Level > 1) { //2 Extra lasers at t2+
+                this.createLaser(-20, -15);
+                this.createLaser(20, -15);
             }
 
             if(this.Level > 2 && !this.Rocket_Cooldown) { //2 Rockets exclusive to t3
-                this.Sfx_Rocket.play(this.Rocket_Config);
                 this.Rocket_Cooldown = true;
-                this.Projectiles.add(
-                    new Rocket(
-                        this.scene, this.x + 40, this.y - 10, "Rocket", 0
-                    ).setScale(0.2, 0.3).setDepth(10).play("Rocket_Loop")
-                );
-                this.Projectiles.add(
-                    new Rocket(
-                        this.scene, this.x - 40, this.y - 10, "Rocket", 0
-                    ).setScale(0.2, 0.3).setDepth(10).play("Rocket_Loop")
-                );
-                this.Rocket_Cooldown = false;
+                this.createRocket(40, -10);
+                this.createRocket(-40, -10);
+                setTimeout(() => {
+                    this.Rocket_Cooldown = false;
+                }, 1000);
             }
         }
         
@@ -131,6 +110,26 @@ class Spaceship extends Phaser.GameObjects.Sprite {
             }
             console.log(this.Level);
         }
+    }
+
+    //Creates a rocket object and stores it inside the projectile group.
+    createRocket(xOffset, yOffset) {
+        this.Sfx_Rocket.play(this.Rocket_Config); //Play sound
+        this.Projectiles.add( //Create rocket
+            new Rocket(
+                this.scene, this.x + xOffset, this.y + yOffset, "Rocket", 0
+            ).setScale(0.2, 0.3).setDepth(10).play("Rocket_Loop")
+        );
+    }
+
+    //Creates a laser object and stores it inside the projectile group.
+    createLaser(xOffset, yOffset) {
+        this.Sfx_Laser.play(this.Laser_Config); //Play sound
+        this.Projectiles.add( //Create laser
+            new Laser(
+                this.scene, this.x + xOffset, this.y + yOffset, "Laser", 0
+            ).setScale(0.5).setDepth(11)
+        );
     }
 
     upgrade() {

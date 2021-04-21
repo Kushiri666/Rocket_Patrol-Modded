@@ -14,9 +14,4 @@ class Rocket extends Phaser.GameObjects.Sprite {
         //Constantly moving upwards.    
         this.y-= this.MOVEMENT_SPEED;
     }
-
-    //Deletes the object
-    delete() {
-        this.delete();
-    }
 }

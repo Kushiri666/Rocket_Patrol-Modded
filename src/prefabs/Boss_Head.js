@@ -7,9 +7,9 @@ class Boss_Head extends Phaser.GameObjects.Sprite {
         this.class = 'Boss_Head';
         this.hitbox_width = 140;
         this.hitbox_height = 80; //80 when mouth is closed
-        this.maxHealth = 1500;
-        this.health = 1500;
-        this.score = 1500;
+        this.maxHealth = 800;
+        this.health = 800;
+        this.score = 1000;
         
         //General fields
         this.player = player; //Player reference

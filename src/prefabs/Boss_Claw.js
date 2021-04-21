@@ -7,8 +7,8 @@ class Boss_Claw extends Phaser.GameObjects.Sprite {
         this.class = 'Boss_Claw';
         this.hitbox_width = 95;
         this.hitbox_height = 40;
-        this.maxHealth = 500;
-        this.health = 500;
+        this.maxHealth = 300;
+        this.health = 300;
         this.score = 500;
         
         //General fields

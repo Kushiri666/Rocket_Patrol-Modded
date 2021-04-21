@@ -21,7 +21,7 @@ class Spaceship extends Phaser.GameObjects.Sprite {
 
         //Class fields
         this.Level = 1; //Ship rank
-        this.Health = 6;
+        this.Health = 40;
         this.Rocket_Cooldown = false; //Cooldown for rocket projectiles
         this.MOVEMENT_SPEED = 5; //Movement speed
         this.scene = scene; //scene reference
@@ -74,11 +74,14 @@ class Spaceship extends Phaser.GameObjects.Sprite {
         }
 
         //Shooting behavior (Keyup + Keydown)
-        if (Phaser.Input.Keyboard.JustUp(keySpace)) {
+        if (this.Health > 0 &&
+            Phaser.Input.Keyboard.JustUp(keySpace)) 
+        {
             console.log("Space released");
         }
-        if (Phaser.Input.Keyboard.JustDown(keySpace)) { //Spawn Rocket
-            console.log("Space pressed");
+        if (this.Health > 0 &&
+            Phaser.Input.Keyboard.JustDown(keySpace)) 
+        {
             //General laser shot
             this.createLaser(0, -60);
             

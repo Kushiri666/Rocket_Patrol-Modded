@@ -65,10 +65,10 @@ class Stage1 extends Phaser.Scene {
         this.Stage1_Config = {mute: false, volume: 0.25, loop: true, delay: 0};
 
         this.Music_Boss1 = this.sound.add("Music_Boss1"); //boss phase 1
-        this.Boss1_Config = {mute: false, volume: 0.25, loop: true, delay: 0};
+        this.Boss1_Config = {mute: false, volume: 0.5, loop: true, delay: 0};
 
         this.Music_Boss2 = this.sound.add("Music_Boss2"); //boss phase 2
-        this.Boss2_Config = {mute: false, volume: 0.25, loop: true, delay: 0};
+        this.Boss2_Config = {mute: false, volume: 0.5, loop: true, delay: 0};
 
         this.Music_Menu = this.sound.add("Music_Menu");
         this.Menu_Config = {mute: false, volume: 0.5, loop: true, delay: 0};
@@ -81,10 +81,16 @@ class Stage1 extends Phaser.Scene {
         this.Rocket_Config = {mute: false, volume: 0.5, loop: false,};
 
         this.Sfx_Explosion = this.sound.add("Sfx_Explosion");
-        this.Explosion_Config = {mute: false, volume: 0.2, loop: false,};
+        this.Explosion_Config = {mute: false, volume: 0.15, loop: false,};
 
         this.Sfx_Boss_Intro = this.sound.add("Sfx_Boss_Enter"); //Boss intro roar
-        this.Intro_Congig = {mute: false, volume: 1, loop: false,};
+        this.Intro_Config = {mute: false, volume: 1, loop: false,};
+
+        this.Sfx_Boss_Roar = this.sound.add("Sfx_Boss_Roar"); //Boss battle roar
+        this.Roar_Config = {mute: false, volume: 0.2, loop: false,};
+
+        this.Sfx_Boss_Laser = this.sound.add("Sfx_Boss_Laser"); //Boss laser sfx
+        this.Boss_Laser_Config = {mute: false, volume: 0.5, loop: false,};
 
         //Background config
         this.Background = this.add.sprite(
@@ -106,16 +112,22 @@ class Stage1 extends Phaser.Scene {
         keyA = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
         keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
         keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
+        keyR = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
         keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
         //Flags
         this.GameOver = false;
+        this.restartPrompted = false;
         this.reachedMidway = false;
         this.ApproachingTop = false;
         this.PlayingRoar = false;
         this.FinishedRoar = false;
         this.EnteringBoss = false;
         this.EnteredBoss = false;
+        this.EnteringPhase2 = false;
+        this.EnteredPhase2 = false;
+        this.DyingBoss = false;
+        this.BossDied = false;
         
         //Score Counter
         this.Score = 0;
@@ -129,24 +141,45 @@ class Stage1 extends Phaser.Scene {
             game.config.height/16, 
             0xF6DF7A
         ).setOrigin(0.5, 0).setDepth(49);
-        let scoreConfig = {
+        let textConfig = {
             fontFamily: 'Courier',
+            backgroundColor: '#F6DF7A',
             fontSize: '28px',
             color: '#000000',
-            align: 'left',
+            align: 'center',
             padding: {
-            top: 5,
-            bottom: 5,
-            left: 5
+            top: 10,
+            bottom: 10,
             },
         }
         this.Text_Stats = this.add.text(
             this.Text_Box.x,
             this.Text_Box.y, 
             "Score: " + this.Score, 
-            scoreConfig
+            textConfig
         ).setDepth(50).setOrigin(0.5, 0);
 
+        //Restart prompt
+        this.Text_Restart = this.add.text(
+            game.config.width/2,
+            game.config.height/2,
+            "", 
+            textConfig
+        ).setDepth(50).setOrigin(0.5, 0.5);
+
+        //Boss health bars
+        this.Boss_Health_Core = this.add.rectangle(game.config.width/2, -20, 
+            200, 
+            5, 
+            0xff225).setDepth(42).setOrigin(0.5, 0.5);
+        this.Boss_Health_Left = this.add.rectangle(game.config.width/2, -20, 
+            200, 
+            5, 
+            0xff225).setDepth(42).setOrigin(0.5, 0.5);
+        this.Boss_Health_Right = this.add.rectangle(game.config.width/2, -20, 
+            200, 
+            5, 
+            0xff225).setDepth(42).setOrigin(0.5, 0.5);
 
         //======================================================================
         // Starting game
@@ -186,9 +219,28 @@ class Stage1 extends Phaser.Scene {
                     if(Monster.health < 1){
                         Temp.makeExplosion(Monster, 0.6, 500); //Explosion animation
                         Temp.Score += Monster.score;  //Incrementing points
-                        Temp.Monsters.remove(Monster, true, true); //Removing monster
+                        if(Monster.class == 'Boss_Claw') {
+                            Temp.BossCore.destroyClaw(Monster.isLeft);
+                            if(Monster.isLeft) {
+                                Temp.BossLeft = null;
+                            } else {
+                                Temp.BossRight = null;
+                            }
+                        } 
+                        if(Monster.class == 'Boss_Head') { //Play special boss death sequence when boss is defeated.
+                            Temp.BossDeath();
+                            Temp.DyingBoss = true;
+                            Temp.Monsters.remove(Monster, false, false); //Removing monster
+                        } else {
+                            Temp.Monsters.remove(Monster, true, true); //Removing monster
+                        }
+                    
                     } else {
-                        Temp.makeExplosion(Monster, 0.2, 500); //Explosion animation
+                        Temp.makeExplosion(Projectile, 0.2, 500); //Explosion animation
+                        if(Monster.class == 'Boss_Head' &&
+                           (!Temp.BossCore.leftDefeated || !Temp.BossCore.rightDefeated)) {
+                            Monster.health += Projectile.damage;
+                        }
                     }
                 }
             });
@@ -266,7 +318,7 @@ class Stage1 extends Phaser.Scene {
         });
 
         //======================================================================
-        // Others
+        // General runtime
         //======================================================================
         //Updating player (Spaceship)
         this.Player.update();
@@ -275,6 +327,33 @@ class Stage1 extends Phaser.Scene {
         this.Text_Stats.setText("Score: " + this.Score + "  " + //Score
             "Ship Health: " + this.Player.Health + "  " +            //Health
             "Ship Rank: " + this.Player.Level)                       //Ship Tier
+
+        //Updating Boss health bars
+        if(this.BossCore) {
+            this.Boss_Health_Core.x = this.BossCore.x;
+            this.Boss_Health_Core.y = this.BossCore.y + 100;
+            this.Boss_Health_Core.width = 200 * (this.BossCore.health / this.BossCore.maxHealth);
+        } else {
+            this.Boss_Health_Core.x = -100;
+            this.Boss_Health_Core.y = -100;
+        }
+        if(this.BossLeft) {
+            this.Boss_Health_Left.x = this.BossLeft.x;
+            this.Boss_Health_Left.y = this.BossLeft.y + 100;
+            this.Boss_Health_Left.width = 200 * (this.BossLeft.health / this.BossLeft.maxHealth);
+        } else {
+            this.Boss_Health_Left.x = -100;
+            this.Boss_Health_Left.y = -100;
+        }
+        if(this.BossRight) {
+            this.Boss_Health_Right.x = this.BossRight.x;
+            this.Boss_Health_Right.y = this.BossRight.y + 100;
+            this.Boss_Health_Right.width = 200 * (this.BossRight.health / this.BossRight.maxHealth);
+        } else {
+            this.Boss_Health_Right.x = -100;
+            this.Boss_Health_Right.y = -100;
+        }
+        
 
         //Drifting the background downwards until the top is reached.
         if(this.Background.y < this.Background.height + (2 * game.config.height) &&
@@ -291,53 +370,16 @@ class Stage1 extends Phaser.Scene {
             this.ApproachingTop = true;
         }
 
-        //Game Over check
-        if(this.Player.Health < 1 &&
-            !this.GameOver) {
-            this.GameOver = true;
-
-            //Clearing monsters
-            this.Monsters.clear(true, true);
-            this.MonsterProjectiles.clear(true, true);
-            
-            //Fading music
-            let Target;
-            if(!this.reachedMidway) {
-                Target = this.Music_Stage1;
-            } 
-            this.tweens.add({ //Fading away music
-                targets: Target,
-                volume: 0,
-                duration: 1000
-            });
-
-            //Explosion effect1
-            this.makeExplosion(this.Player, 0.2, 500);
-            //Explosion effect2
-            setTimeout(() => {
-                this.makeExplosion(this.Player, 0.2, 500);
-                //Explosion effect3
-                setTimeout(() => { 
-                    this.makeExplosion(this.Player, 0.2, 500);
-                    //Explosion effect4
-                    setTimeout(() => {
-                        this.makeExplosion(this.Player, 0.2, 500);
-                        //Explosion effect5
-                        setTimeout(() => {
-                            this.makeExplosion(this.Player, 0.8, 2000);
-                            setTimeout(() => {
-                                //Destroying ship
-                                this.Player.destroy();
-
-                                //Playing Menu music
-                                setTimeout(() => {
-                                    this.Music_Menu.play(this.Menu_Config);
-                                }, 4000);
-                            }, 100);
-                        }, 1000);
-                    }, 500);
-                }, 500);
-            }, 500);
+        //Reset behavior
+        if (Phaser.Input.Keyboard.JustDown(keySpace) &&
+            this.GameOver &&
+            this.restartPrompted) 
+        {
+            this.Music_Menu.stop();
+            this.BossCore = null;
+            this.BossLeft = null;
+            this.BossRight = null;
+            this.scene.start('Scene_MainMenu'); 
         }
 
         //spawning monsters --Disabled during boss--
@@ -369,12 +411,14 @@ class Stage1 extends Phaser.Scene {
             }
         }
 
-        //Flag Checks
+        //======================================================================
+        // Flag checks
+        //======================================================================
         if(this.ApproachingTop && //Approaching boss zone
             !this.PlayingRoar) {
             this.PlayingRoar = true;
 
-            this.Sfx_Boss_Intro.play(this.Intro_Congig);//Playing boss intro roar
+            this.Sfx_Boss_Intro.play(this.Intro_Config); //Playing boss intro roar
             this.tweens.add({ //Fading away music
                 targets: this.Music_Stage1,
                 volume: 0,
@@ -385,18 +429,85 @@ class Stage1 extends Phaser.Scene {
             }, 8000);
         }
 
-        if(this.FinishedRoar &&
+        if(this.FinishedRoar && //Boss spawns in then enters the arena.
             !this.EnteringBoss) {
             this.EnteringBoss = true;
-
+                this.spawnBoss();
         }
-    }
 
-    //Resetting for a new round (idk if phaser saves scene data so just in case).
-    reset() {
-        //Delete monster list.
-        //Delete spaceship.
-        //Delete boss if applicable.
+        if(this.BossCore && //Boss is entering phase 2
+            this.BossCore.leftDefeated &&
+            this.BossCore.rightDefeated &&
+            !this.EnteringPhase2) 
+        {
+            this.EnteringPhase2 = true;
+            this.EnterPhase2();
+        }
+
+        if(this.Player.Health < 1 && //Game Over lose
+            !this.BossDied &&
+            !this.GameOver) {
+            this.GameOver = true;
+
+            //Clearing monsters
+            this.Monsters.clear(true, true);
+            this.MonsterProjectiles.clear(true, true);
+            
+            //Fading music
+            this.tweens.add({ //Fading away music
+                targets: this.Music_Boss1,
+                volume: 0,
+                duration: 1000
+            });
+            this.tweens.add({ //Fading away music
+                targets: this.Music_Boss2,
+                volume: 0,
+                duration: 1000
+            });
+            this.tweens.add({ //Fading away music
+                targets: this.Music_Stage1,
+                volume: 0,
+                duration: 1000
+            });
+
+            //Explosion effect1
+            this.makeExplosion(this.Player, 0.2, 500);
+            //Explosion effect2
+            setTimeout(() => {
+                this.makeExplosion(this.Player, 0.2, 500);
+                //Explosion effect3
+                setTimeout(() => { 
+                    this.makeExplosion(this.Player, 0.2, 500);
+                    //Explosion effect4
+                    setTimeout(() => {
+                        this.makeExplosion(this.Player, 0.2, 500);
+                        //Explosion effect5
+                        setTimeout(() => {
+                            this.makeExplosion(this.Player, 0.8, 2000);
+                            setTimeout(() => {
+                                //Destroying ship
+                                this.Player.destroy();
+
+                                //Playing Menu music
+                                setTimeout(() => {
+                                    this.Music_Menu.play(this.Menu_Config);
+                                    this.promptRestart(false);
+                                }, 4000);
+                            }, 100);
+                        }, 1000);
+                    }, 500);
+                }, 500);
+            }, 500);
+        }
+
+        //Game over win check
+        if(this.BossDied &&
+            !this.GameOver)
+        {
+            this.GameOver = true;
+            this.promptRestart(true);
+        }
+
     }
 
     //Spawn behaviors
@@ -405,7 +516,7 @@ class Stage1 extends Phaser.Scene {
         var monsterData = {};
         monsterData.data = {};
         monsterData.spawnX = 0;
-        monsterData.spawnY = Math.floor(Math.random() * (game.config.height / 4)) + 50;
+        monsterData.spawnY = Math.floor(Math.random() * (game.config.height / 4)) + 150;
         monsterData.movespeed = Math.floor(Math.random() * 2) + 2;
         monsterData.player = this.Player;
         monsterData.behavior = 'wave';
@@ -447,7 +558,7 @@ class Stage1 extends Phaser.Scene {
 
         //Additional data
         monsterData.data.fallSpeed = Math.floor(Math.random() * 5) + 2;
-        monsterData.data.stopY = (game.config.height / 8) + 40;
+        monsterData.data.stopY = (game.config.height / 8) + 100;
 
         //Fireball variance
         var temp = Math.floor(Math.random() * 100);
@@ -503,8 +614,137 @@ class Stage1 extends Phaser.Scene {
     }
 
     spawnBoss() { //Spawns the boss head along with it's 2 hands
-        
+        //Creating sprites
+        this.BossCore = new Boss_Head( //head
+            this, game.config.width/2, -500, 'Stage1_Boss-Head', 1,
+            this.Player,
+            this.MonsterProjectiles,
+            this.Sfx_Boss_Roar,
+            this.Roar_Config,
+            this.Sfx_Boss_Laser,
+            this.Boss_Laser_Config
+        ).setDepth(40).setOrigin(0.5, 0.5).setScale(0.9)        
+        this.BossLeft = new Boss_Claw( //left claw
+            this, this.BossCore.x + 500, this.BossCore.y + 100, 'Stage1_Boss-Claw', 0,
+            this.Player,
+            this.MonsterProjectiles,
+            this.BossCore,
+            true
+        ).setDepth(41).setOrigin(0.5, 0.5) 
+        this.BossRight = new Boss_Claw( //right claw
+            this, this.BossCore.x - 500, this.BossCore.y + 100, 'Stage1_Boss-Claw', 0,
+            this.Player,
+            this.MonsterProjectiles,
+            this.BossCore,
+            false
+        ).setDepth(41).setOrigin(0.5, 0.5)
+
+        //Moving boss into vision
+        this.tweens.add({
+            targets: this.BossCore,
+            y: game.config.height/3,
+            duration: 4000
+        });
+        this.tweens.add({
+            targets: this.BossLeft,
+            y: game.config.height/3 + 100,
+            duration: 4000
+        });
+        this.tweens.add({
+            targets: this.BossRight,
+            y: game.config.height/3 + 100,
+            duration: 4000
+        });
+        setTimeout(() =>{
+            //roar
+            this.BossCore.setFrame(7);
+            this.Sfx_Boss_Roar.play(this.Roar_Config);
+            
+            //begin fight in 8s
+            setTimeout(() =>{
+                this.Music_Boss1.play(this.Boss1_Config);
+                this.Monsters.add(this.BossCore);
+                this.Monsters.add(this.BossLeft);
+                this.Monsters.add(this.BossRight);
+                this.EnteredBoss = true;
+            }, 4000);
+        }, 5000);
     }
+
+    EnterPhase2() {
+        //Temporarily removing boss from the update queue.
+        this.Monsters.clear(false, false);
+        this.BossCore.setFrame(14);
+        this.tweens.add({ //Fading away Boss2
+            targets: this.Music_Boss1,
+            volume: 0,
+            duration: 2000
+        });
+        setTimeout(() =>{
+            this.BossCore.setFrame(15);
+            this.Sfx_Boss_Roar.play(this.Roar_Config);
+            setTimeout(() =>{
+                this.Music_Boss2.play(this.Boss2_Config);
+                this.Monsters.add(this.BossCore);
+                this.EnteredPhase2 = true;
+            }, 2500);
+        }, 2500);
+    }
+
+    BossDeath() {//Sets up the first frame, fades the music, empty projectiles
+        this.MonsterProjectiles.clear(true, true);
+        this.BossCore.setFrame(14);
+        this.tweens.add({
+            targets: this.Music_Boss2,
+            volume: 0,
+            duration: 1500
+        });
+        setTimeout(() =>{
+            this.BossDeath2(0, 20);
+        }, 2000);
+    }
+
+    BossDeath2(count, max) { //Recursive explosions, increasing spd
+        if(count < max) {
+            let randomX = (Math.floor(Math.random() * this.BossCore.hitbox_width + 50)) - this.BossCore.hitbox_width/2;
+            let randomY = (Math.floor(Math.random() * this.BossCore.hitbox_height + 50)) - this.BossCore.hitbox_height/2;
+            
+            this.Sfx_Explosion.play(this.Explosion_Config);
+            let boom = this.add.sprite(
+                this.BossCore.x - 50 + randomX, 
+                this.BossCore.y - 50 + randomY, 
+                "Explosion"
+            ).setOrigin(0.5, 0.5).setScale(0.2).setDepth(100);
+            this.tweens.add({targets: boom, alpha: 0, duration: 500});
+            setTimeout(() => {boom.destroy();}, 500);
+            setTimeout(() => {
+                this.BossDeath2(count + 1, max);
+            }, 500/(count + 1));
+            
+        } else {
+            setTimeout(() =>{
+                this.BossDeath3();
+            }, 500);
+        }
+    }
+
+    BossDeath3() { //One big explosion + one final roar before fading away
+        this.makeExplosion(this.BossCore, 1.5, 4000);
+        this.Sfx_Boss_Roar.play(this.Roar_Config);
+        this.BossCore.setFrame(15);
+        this.tweens.add({
+            targets: this.BossCore, 
+            alpha: 0, 
+            duration: 4000
+        });
+        setTimeout(() =>{
+            this.BossDied = true;
+            this.Player.Health = 0;
+            this.Music_Menu.play(this.Menu_Config);
+            this.promptRestart(false);
+        }, 4500);
+    }
+
 
     //Makes an explosion
     makeExplosion(Target, scale, duration) {
@@ -512,5 +752,18 @@ class Stage1 extends Phaser.Scene {
         let boom = this.add.sprite(Target.x, Target.y, "Explosion").setOrigin(0.5, 0.5).setScale(scale).setDepth(100);
         this.tweens.add({targets: boom, alpha: 0, duration: duration});
         setTimeout(() => {boom.destroy();}, duration);
+    }
+
+    promptRestart(playerWon){
+        if(playerWon) {
+            this.Text_Restart.setText("Final score: " + this.Score + "\n" +
+            "Excellent work! The spooky alien is no more!\n" +
+            "Press SPACE to return to menu.")
+        } else {
+            this.Text_Restart.setText("Final score: " + this.Score + "\n" +
+                "Go again. You can't give up now!\n" +
+                "Press SPACE to return to menu.")
+        }
+        setTimeout(() => {this.restartPrompted = true;}, 2000);
     }
 }

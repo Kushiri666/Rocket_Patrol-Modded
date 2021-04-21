@@ -1,6 +1,6 @@
 // Laser prefab
 class Fireball extends Phaser.GameObjects.Sprite {
-    constructor(scene, x, y, texture, frame, speed, varient, player) {
+    constructor(scene, x, y, texture, frame, speed, varient, player, additionalInfo) {
         super(scene, x, y, texture, frame);
 
         //Mandatory fields
@@ -11,10 +11,21 @@ class Fireball extends Phaser.GameObjects.Sprite {
         //Movement speed
         this.movement_Speed = speed;
         this.varient = varient;
+        this.player = player;
 
         //determing trajectory (towards player)
         this.moveX = this.x - player.x;
         this.moveY = this.y - player.y;
+
+        this.additionalData = additionalInfo;
+
+        //Applying boss scales hitboxes
+        if(this.varient == 'boss' &&
+            this.additionalData.scale) 
+        {
+            this.hitbox_width *= (this.additionalData.scale * 10);
+            this.hitbox_width *= (this.additionalData.scale * 10);
+        }
 
         //Adding object to scene.
         scene.add.existing(this);
@@ -27,6 +38,9 @@ class Fireball extends Phaser.GameObjects.Sprite {
         if(this.varient == 'fall') {
             this.fall();
         }
+        if(this.varient == 'boss') {
+            this.boss();
+        }
     }
 
     target() {
@@ -38,6 +52,16 @@ class Fireball extends Phaser.GameObjects.Sprite {
     fall() {
         //Constantly falling down.
         this.y += this.movement_Speed
+    }
+
+    boss() {
+        if(this.additionalData.varient == 'track') {
+            let direction = this.player.x - this.x;
+            direction = direction / (Math.abs(direction) + 0.000001);
+
+            this.x += this.movement_Speed * direction;
+            this.y += this.movement_Speed;
+        }
     }
 
     checkCollision(obj2) {

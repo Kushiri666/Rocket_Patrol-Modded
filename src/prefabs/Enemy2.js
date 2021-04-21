@@ -61,7 +61,7 @@ class Enemy2 extends Phaser.GameObjects.Sprite {
             let RandomY = (Math.floor(Math.random() * game.config.height / 16) + (game.config.height / 32)) * this.Ydirection;
             let predictionY = this.y + RandomY;
             if(predictionY > game.config.height / 8 ||
-                predictionY < 50) {
+                predictionY < 150) {
                 this.Ydirection *= -1;
                 RandomY *= -1;
             }

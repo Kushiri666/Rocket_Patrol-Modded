@@ -39,15 +39,34 @@ class MainMenu extends Phaser.Scene {
 
         //Generating Menu
         this.add.text(game.config.width/2, 
-            game.config.height/2 - borderUISize - borderPadding, 
+            borderUISize + borderPadding, 
             'ROCKET PATROL - Modded Edition', 
             menuConfig).setOrigin(0.5);
-
         this.add.text(game.config.width/2, 
-            game.config.height/2, 
+            borderUISize + borderPadding + 50, 
+            'Modified to resemble a classic shoot em up.', 
+            menuConfig).setOrigin(0.5);
+        this.add.text(game.config.width/2, 
+            borderUISize + borderPadding + 150, 
+            'Use A and D to move side to side.', 
+            menuConfig).setOrigin(0.5);
+        this.add.text(game.config.width/2, 
+            borderUISize + borderPadding + 200, 
+            'Use the spacebar to fire your lasers!', 
+            menuConfig).setOrigin(0.5);
+        this.add.text(game.config.width/2, 
+            borderUISize + borderPadding + 250, 
+            'Collect powerups to upgrade your ship!', 
+             menuConfig).setOrigin(0.5);
+        this.add.text(game.config.width/2, 
+            borderUISize + borderPadding + 300, 
+            'Defeat enemies to gain points!', 
+            menuConfig).setOrigin(0.5);
+        this.add.text(game.config.width/2, 
+            borderUISize + borderPadding + 450, 
             'Begin the game by pressing Space', 
             menuConfig).setOrigin(0.5);
-            
+
         menuConfig.backgroundColor = '#00FF00';
         menuConfig.color = '#000';
 

@@ -7,6 +7,7 @@ class Rocket extends Phaser.GameObjects.Sprite {
         this.class = 'Rocket';
         this.hitbox_width = 31;
         this.hitbox_height = 52;
+        this.damage = 4;
 
         //Movement speed
         this.MOVEMENT_SPEED = 6;

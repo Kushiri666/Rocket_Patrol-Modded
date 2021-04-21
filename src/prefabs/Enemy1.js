@@ -7,6 +7,8 @@ class Enemy1 extends Phaser.GameObjects.Sprite {
         this.class = 'Enemy1';
         this.hitbox_width = 51;
         this.hitbox_height = 51;
+        this.health = 1;
+        this.score = 1;
 
         //won't update without it
         console.log(rate);
@@ -107,7 +109,7 @@ class Enemy1 extends Phaser.GameObjects.Sprite {
 
         //Face the player
         if(this.x - this.player.x < 0) {
-            this.flipX;
+            this.flipX = true;
         }
     }
 

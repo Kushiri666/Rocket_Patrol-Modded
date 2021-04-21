@@ -7,6 +7,7 @@ class Laser extends Phaser.GameObjects.Sprite {
         this.class = 'Laser';
         this.hitbox_width = 3;
         this.hitbox_height = 30;
+        this.damage = 1;
 
         //Movement speed
         this.MOVEMENT_SPEED = 12;

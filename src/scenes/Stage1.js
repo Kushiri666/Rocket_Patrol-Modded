@@ -35,6 +35,9 @@ class Stage1 extends Phaser.Scene {
     }
 
     create() {
+        //======================================================================
+        // Loadout
+        //======================================================================
         //Animations config
         this.anims.create({ //Rocket Loop
             key: 'Rocket_Loop', frameRate: 8, repeat: -1,
@@ -47,7 +50,10 @@ class Stage1 extends Phaser.Scene {
         this.anims.create({ //Enemy1 Loop
             key: 'Enemy1_Loop', frameRate: 8, repeat: -1,
             frames: this.anims.generateFrameNumbers('Stage1_Enemy1', { start: 0, end: 1, first: 0}),
-
+        });
+        this.anims.create({ //Enemy2 Loop
+            key: 'Enemy2_Loop', frameRate: 8, repeat: -1,
+            frames: this.anims.generateFrameNumbers('Stage1_Enemy2', { start: 0, end: 1, first: 0}),
         });
         this.anims.create({ //Background Loop
             key: 'Olympus', frameRate: 1, repeat: -1,
@@ -64,6 +70,9 @@ class Stage1 extends Phaser.Scene {
         this.Music_Boss2 = this.sound.add("Music_Boss2"); //boss phase 2
         this.Boss2_Config = {mute: false, volume: 0.25, loop: true, delay: 0};
 
+        this.Music_Menu = this.sound.add("Music_Menu");
+        this.Menu_Config = {mute: false, volume: 0.5, loop: true, delay: 0};
+
         //Sfx config
         this.Sfx_Player_Laser = this.sound.add("Sfx_Player_Laser"); //basic laser shooting sfx
         this.Laser_Config = {mute: false, volume: 0.2, loop: false,};
@@ -71,30 +80,77 @@ class Stage1 extends Phaser.Scene {
         this.Sfx_Player_Rocket = this.sound.add("Sfx_Player_Death"); //rocket shooting sfx
         this.Rocket_Config = {mute: false, volume: 0.5, loop: false,};
 
+        this.Sfx_Explosion = this.sound.add("Sfx_Explosion");
+        this.Explosion_Config = {mute: false, volume: 0.2, loop: false,};
+
+        this.Sfx_Boss_Intro = this.sound.add("Sfx_Boss_Enter"); //Boss intro roar
+        this.Intro_Congig = {mute: false, volume: 1, loop: false,};
+
         //Background config
         this.Background = this.add.sprite(
             game.config.width/2, game.config.height, "Stage1_Background"
         ).setOrigin(0.5, 1).setScale(game.config.width / 640);
 
+        //======================================================================
+        // Technical
+        //======================================================================
         //Group for storing created monsters.
         this.Monsters = new Phaser.GameObjects.Group(this);
         this.SpawnCooldown = false; //Cooldown to determine if monsters can be spawned.
         
         //Group for storing monster projectiles.
         this.MonsterProjectiles = new Phaser.GameObjects.Group(this);
+            
+        // define keys
+        keyW = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+        keyA = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+        keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+        keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
+        keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
-        //Collision modifiers (just a reminder. the values are actually referenced in the monster classes)
-        this.CM = {};
-        this.CM.Spaceship = 60;
-        this.CM.Laser = {};
-            this.CM.Laser.X = 3;
-            this.CM.Laser.Y = 30;
-        this.CM.Rocket = {};
-            this.CM.Rocket.X = 31;
-            this.CM.Rocket.Y = 52;
-        this.CM.Enemy1 = 54;
-        this.CM.Fireball = 16;
+        //Flags
+        this.GameOver = false;
+        this.reachedMidway = false;
+        this.ApproachingTop = false;
+        this.PlayingRoar = false;
+        this.FinishedRoar = false;
+        this.EnteringBoss = false;
+        this.EnteredBoss = false;
+        
+        //Score Counter
+        this.Score = 0;
 
+        //======================================================================
+        // Gui
+        //======================================================================
+        //Corner score box
+        this.Text_Box = this.add.rectangle(game.config.width/2, 5, 
+            game.config.width/2, 
+            game.config.height/16, 
+            0xF6DF7A
+        ).setOrigin(0.5, 0).setDepth(49);
+        let scoreConfig = {
+            fontFamily: 'Courier',
+            fontSize: '28px',
+            color: '#000000',
+            align: 'left',
+            padding: {
+            top: 5,
+            bottom: 5,
+            left: 5
+            },
+        }
+        this.Text_Stats = this.add.text(
+            this.Text_Box.x,
+            this.Text_Box.y, 
+            "Score: " + this.Score, 
+            scoreConfig
+        ).setDepth(50).setOrigin(0.5, 0);
+
+
+        //======================================================================
+        // Starting game
+        //======================================================================
         //Spawning in player
         this.Player = new Spaceship(
             this, game.config.width/2, game.config.height - 100, "Spaceship", 0,
@@ -103,20 +159,6 @@ class Stage1 extends Phaser.Scene {
             this.Sfx_Player_Rocket,
             this.Rocket_Config
         ).setOrigin(0.5, 0.5).setScale(0.3).setDepth(20);
-
-        // define keys
-        keyW = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
-        keyA = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
-        keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
-        keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
-        keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-        
-        //Flags
-        this.HeardRoar = false;
-        this.ReachedPinnacle = false;
-        this.EnteredBoss = false;
-        this.clearedForest = false;
-        this.GameStart = false;
 
         //Starting background animation.
         this.Background.play("Olympus");
@@ -131,39 +173,53 @@ class Stage1 extends Phaser.Scene {
         //======================================================================
         // Collision
         //======================================================================
-        var Temp; //temp group storage for in-loop referencing
-        var Temp2; //^^^
+        var Temp = this; //temp scene storage for in-loop referencing
         //Updating player projectile positions + collision.
-        Temp = this.Player.Projectiles;
-        Temp2 = this.Monsters;
-        Temp.getChildren().forEach(function(Projectile) {
+        this.Player.Projectiles.getChildren().forEach(function(Projectile) {
             Projectile.update();
             
             //Checking for collision (monsters)
-            Temp2.getChildren().forEach(function(Monster) {
+            Temp.Monsters.getChildren().forEach(function(Monster) {
                 if(Projectile.checkCollision(Monster)) {
-                    console.log("Projectile hit!");
-                    Temp.remove(Projectile, true, true); //Removing projectile
-                    Temp2.remove(Monster, true, true); //Removing monster
+                    Temp.Player.Projectiles.remove(Projectile, true, true); //Removing projectile
+                    Monster.health -= Projectile.damage; //reducing monster hp
+                    if(Monster.health < 1){
+                        Temp.makeExplosion(Monster, 0.6, 500); //Explosion animation
+                        Temp.Score += Monster.score;  //Incrementing points
+                        Temp.Monsters.remove(Monster, true, true); //Removing monster
+                    } else {
+                        Temp.makeExplosion(Monster, 0.2, 500); //Explosion animation
+                    }
                 }
             });
             
             //Deleting off-screen drifters
             if(Projectile.y < -100) {
-                Temp.remove(Projectile, true, true);
+                Temp.Player.Projectiles.remove(Projectile, true, true);
             }
         });
 
         //Updating monster positions + collisions.
-        Temp = this.Monsters;
-        Temp2 = this.Player;
-        Temp.getChildren().forEach(function(Monster) {
+        this.Monsters.getChildren().forEach(function(Monster) {
             Monster.update();
             
             //Checking for collision (player ship only since player projectile checked before^^^)
-            if(Monster.checkCollision(Temp2)) {
-                console.log('Player hit!');
-                Temp.remove(Monster, true, true); //Removing monster
+            if(Monster.checkCollision(Temp.Player)) {
+                Temp.Sfx_Explosion.play(Temp.Explosion_Config); //Play sound
+                    
+                //Explosion animation
+                let boom = Temp.add.sprite(Monster.x, Monster.y, "Explosion").setOrigin(0.5, 0.5).setScale(0.2);
+                Temp.tweens.add({ //Fading away explosion
+                    targets: boom,
+                    alpha: 0,
+                    duration: 500
+                });
+                setTimeout(() => { //Delaying explosion sprite deletion
+                    boom.destroy();
+                }, 500);
+
+                Temp.Player.Health -= 1;  //Incrementing points
+                Temp.Monsters.remove(Monster, true, true); //Removing monster
             }
             
             //Deleting off-screen drifters
@@ -172,20 +228,31 @@ class Stage1 extends Phaser.Scene {
                 Monster.x < -100 || //far off left
                 Monster.x > game.config.width + 100) //far off right 
             {
-                Temp.remove(Monster, true, true);
+                Temp.Monsters.remove(Monster, true, true);
             }
         });
 
         //Updating monster projectile positions + collisions.
-        Temp = this.MonsterProjectiles;
-        Temp2 = this.Player;
-        Temp.getChildren().forEach(function(Projectile) {
+        Temp.MonsterProjectiles.getChildren().forEach(function(Projectile) {
             Projectile.update();
 
             //Checking for collision (Player only)
-            if(Projectile.checkCollision(Temp2)) {
-                console.log('Player hit!');
-                Temp.remove(Projectile, true, true);//Removing projectile
+            if(Projectile.checkCollision(Temp.Player)) {
+                Temp.Sfx_Explosion.play(Temp.Explosion_Config); //Play sound
+                    
+                //Explosion animation
+                let boom = Temp.add.sprite(Projectile.x, Projectile.y, "Explosion").setOrigin(0.5, 0.5).setScale(0.2);
+                Temp.tweens.add({ //Fading away explosion
+                    targets: boom,
+                    alpha: 0,
+                    duration: 500
+                });
+                setTimeout(() => { //Delaying explosion sprite deletion
+                    boom.destroy();
+                }, 500);
+
+                Temp.Player.Health -= 1;  //Incrementing points
+                Temp.MonsterProjectiles.remove(Projectile, true, true);//Removing projectile
             }
 
              //Deleting off-screen drifters
@@ -194,7 +261,7 @@ class Stage1 extends Phaser.Scene {
                 Projectile.x < -100 || //far off left
                 Projectile.x > game.config.width + 100) //far off right 
             {
-                Temp.remove(Projectile, true, true);
+                Temp.MonsterProjectiles.remove(Projectile, true, true);
             }
         });
 
@@ -204,14 +271,81 @@ class Stage1 extends Phaser.Scene {
         //Updating player (Spaceship)
         this.Player.update();
 
+        //Updating text
+        this.Text_Stats.setText("Score: " + this.Score + "  " + //Score
+            "Ship Health: " + this.Player.Health + "  " +            //Health
+            "Ship Rank: " + this.Player.Level)                       //Ship Tier
+
         //Drifting the background downwards until the top is reached.
-        if(this.Background.y < this.Background.height + (2 * game.config.height)) {
+        if(this.Background.y < this.Background.height + (2 * game.config.height) &&
+            !this.GameOver) {
             this.Background.y += 0.1;
         }
+        //Setting background flags
+        if(this.Background.y > this.Background.height + game.config.height &&
+            !this.reachedMidway) {
+            this.reachedMidway = true;
+        }
+        if(this.Background.y > this.Background.height + (1.8 * game.config.height) &&
+            !this.ApproachingTop) {
+            this.ApproachingTop = true;
+        }
 
-        //spawning monsters
-        if(!this.SpawnCooldown) {
+        //Game Over check
+        if(this.Player.Health < 1 &&
+            !this.GameOver) {
+            this.GameOver = true;
+
+            //Clearing monsters
+            this.Monsters.clear(true, true);
+            this.MonsterProjectiles.clear(true, true);
+            
+            //Fading music
+            let Target;
+            if(!this.reachedMidway) {
+                Target = this.Music_Stage1;
+            } 
+            this.tweens.add({ //Fading away music
+                targets: Target,
+                volume: 0,
+                duration: 1000
+            });
+
+            //Explosion effect1
+            this.makeExplosion(this.Player, 0.2, 500);
+            //Explosion effect2
+            setTimeout(() => {
+                this.makeExplosion(this.Player, 0.2, 500);
+                //Explosion effect3
+                setTimeout(() => { 
+                    this.makeExplosion(this.Player, 0.2, 500);
+                    //Explosion effect4
+                    setTimeout(() => {
+                        this.makeExplosion(this.Player, 0.2, 500);
+                        //Explosion effect5
+                        setTimeout(() => {
+                            this.makeExplosion(this.Player, 0.8, 2000);
+                            setTimeout(() => {
+                                //Destroying ship
+                                this.Player.destroy();
+
+                                //Playing Menu music
+                                setTimeout(() => {
+                                    this.Music_Menu.play(this.Menu_Config);
+                                }, 4000);
+                            }, 100);
+                        }, 1000);
+                    }, 500);
+                }, 500);
+            }, 500);
+        }
+
+        //spawning monsters --Disabled during boss--
+        if(!this.SpawnCooldown &&
+            !this.ApproachingTop &&
+            !this.GameOver) {
             this.SpawnCooldown = true;
+            //Spawning Enemy1
             var temp = Math.floor(Math.random() * 100);
             if(temp % 2 == 0) {
                 this.spawnRain();
@@ -224,9 +358,38 @@ class Stage1 extends Phaser.Scene {
                     this.SpawnCooldown = false;
                 }, 8000);
             }
+            //Spawning Enemy2
+            if(this.reachedMidway) {
+                temp = Math.floor(Math.random() * 100);
+                if(temp > 50) {
+                    setTimeout(() => {
+                        this.spawnEnemy2();
+                    }, 2000);
+                }   
+            }
         }
 
-        //Flag checks
+        //Flag Checks
+        if(this.ApproachingTop && //Approaching boss zone
+            !this.PlayingRoar) {
+            this.PlayingRoar = true;
+
+            this.Sfx_Boss_Intro.play(this.Intro_Congig);//Playing boss intro roar
+            this.tweens.add({ //Fading away music
+                targets: this.Music_Stage1,
+                volume: 0,
+                duration: 1000
+            });
+            setTimeout(() => {
+                this.FinishedRoar = true;
+            }, 8000);
+        }
+
+        if(this.FinishedRoar &&
+            !this.EnteringBoss) {
+            this.EnteringBoss = true;
+
+        }
     }
 
     //Resetting for a new round (idk if phaser saves scene data so just in case).
@@ -299,7 +462,7 @@ class Stage1 extends Phaser.Scene {
     }
 
     spawnEnemy1(monsterData, delay, count, goal) { //recursively spawns monsters at a fixed delay.
-        console.log("Count: " + count + " Goal: " + goal);
+        if(this.GameOver) {return false;};
         if(count < goal) {
             this.Monsters.add( //create enemy
                 new Enemy1(
@@ -319,5 +482,35 @@ class Stage1 extends Phaser.Scene {
                 this.spawnEnemy1(monsterData, delay, count + 1, goal);
             }, delay);
         }
+    }
+
+    spawnEnemy2() { //Spawns a single enemy2
+        if(this.GameOver) {return false;}
+        var direction = Math.floor(Math.random() * 100);
+        if(direction % 2 == 0) {
+            direction = -1;
+        } else {
+            direction = 1
+        }
+
+        this.Monsters.add( //create enemy
+            new Enemy2(this, -60, -60, 'Stage1_Enemy2', 0,
+                this.Player,
+                this.MonsterProjectiles,
+                direction
+            ).setScale(0.5).setOrigin(0.5, 0.5).setDepth(13).play('Enemy2_Loop')
+        );
+    }
+
+    spawnBoss() { //Spawns the boss head along with it's 2 hands
+        
+    }
+
+    //Makes an explosion
+    makeExplosion(Target, scale, duration) {
+        this.Sfx_Explosion.play(this.Explosion_Config);
+        let boom = this.add.sprite(Target.x, Target.y, "Explosion").setOrigin(0.5, 0.5).setScale(scale).setDepth(100);
+        this.tweens.add({targets: boom, alpha: 0, duration: duration});
+        setTimeout(() => {boom.destroy();}, duration);
     }
 }

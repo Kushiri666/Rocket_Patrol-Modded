@@ -21,6 +21,7 @@ class Spaceship extends Phaser.GameObjects.Sprite {
 
         //Class fields
         this.Level = 1; //Ship rank
+        this.Health = 6;
         this.Rocket_Cooldown = false; //Cooldown for rocket projectiles
         this.MOVEMENT_SPEED = 5; //Movement speed
         this.scene = scene; //scene reference
